@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Chat App</title>
+  </head>
+  <body>
+    <h1>Welcome to Chat Room: <%= room %></h1>
+    <div id="messages"></div>
+    <form id="chatForm">
+      <input type="text" id="messageInput" />
+      <input type="file" id="fileInput" />
+      <button type="submit">Send</button>
+    </form>
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.0/socket.io.js"></script>
+    <script>
+      const room = '<%= room %>';
+      const socket = io();
+  
+      // Emit the 'join room' event to join the specific room
+      socket.emit('join room', room);
+  
+      const messagesContainer = document.getElementById('messages');
+      const chatForm = document.getElementById('chatForm');
+      const messageInput = document.getElementById('messageInput');
+      const fileInput = document.getElementById('fileInput');
+  
+      chatForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+  
+        const message = messageInput.value;
+  
+        // Send the message and file (if available) to the server
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('file', fileInput.files[0]);
+        formData.append('room', room);
+  
+        fetch('/send-message', {
+          method: 'POST',
+          body: formData
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const imageUrl = data.imageUrl;
+  
+            // Display the message and file in the chat window
+            const messageElement = document.createElement('p');
+            messageElement.textContent = message;
+  
+            if (imageUrl) {
+              const imageElement = document.createElement('img');
+              imageElement.src = imageUrl;
+              imageElement.style.maxWidth = '200px';
+              imageElement.style.height = 'auto';
+  
+              messagesContainer.appendChild(imageElement);
+            }
+  
+            messagesContainer.appendChild(messageElement);
+          })
+          .catch((error) => {
+            console.error('Error sending message:', error);
+          });
+  
+        messageInput.value = '';
+        fileInput.value = '';
+      });
+  
+      socket.on('chat message', (msg) => {
+        const message = msg.message;
+        const imageUrl = msg.imageUrl;
+  
+        // Display the received message and file in the chat window
+        const messageElement = document.createElement('p');
+        messageElement.textContent = message;
+  
+        if (imageUrl) {
+          const imageElement = document.createElement('img');
+          imageElement.src = imageUrl;
+          imageElement.style.maxWidth = '200px';
+          imageElement.style.height = 'auto';
+  
+          messagesContainer.appendChild(imageElement);
+        }
+  
+        messagesContainer.appendChild(messageElement);
+      });
+    </script>
+  </body>
+</html>
