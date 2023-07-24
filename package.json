@@ -6,10 +6,5 @@
   "scripts": {
     "start": "node index.js"
   },
-  "dependencies": {
-    "express": "^4.17.1"
-    // Add other dependencies here if your app requires any
-  },
-  "author": "Rono",
-  "license": "MIT"
+  
 }
