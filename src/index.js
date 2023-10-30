@@ -1,3 +1,6 @@
+//designed this for p2p chat communication 
+//ps: data here is'nt stored anywhere besides the receiver and sender's device plus it's 
+//encrypted hence end to end encryption ... it's mostly designed for afleet||Onestack||freshfit||and now buswise (formarlly Afleet)
 const express = require('express');
 const socketIO = require('socket.io');
 const bodyParser = require('body-parser');
