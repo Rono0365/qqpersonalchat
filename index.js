@@ -129,6 +129,17 @@ app.get('/messages/:room', (req, res) => {
 
   res.json({ messages });
 });
+app.get('/transit/:room', (req, res) => {
+  const room = req.params.room;
+
+  // Retrieve messages for the specified room
+  const messages =  xx.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
+
+  res.json({ messages });
+});
+app.get('/transit', (req, res) => {
+  res.json(messages); // Return the messages as JSON
+});
 
 
 
