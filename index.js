@@ -4,24 +4,27 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const server = app.listen(3000, () => {
   console.log('Server is running on port 3000');
 });
-const xx =[];
+
+const io = socketIO(server);
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Configure multer to handle file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Set the destination folder where the uploaded files will be stored
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    // Set the filename of the uploaded file
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const fileExtension = path.extname(file.originalname);
     cb(null, 'file-' + uniqueSuffix + fileExtension);
@@ -29,30 +32,26 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-const messagesByRoom = {};
 
-app.post('/:room', (req, res) => {
+app.post('/:room', async (req, res) => {
   const room = req.params.room;
-  const message = req.body.message;
-  const writerName = req.body.writerName;
-  const timestamp = new Date().toLocaleString();
-  // Process the message as needed
+  const { message, writerName } = req.body;
+  const timestamp = new Date().toISOString();
+
   console.log('Received message:', message);
 
-  // Save the message for the specified room
-  xx.push([room, [writerName,message,timestamp]]);
+  const { data, error } = await supabase
+    .from('messages')
+    .insert([{ room, writerName, message, timestamp }]);
 
-  // Retrieve messages for the specified room
-  retrieveMessages(room)
-    .then((messages) => {
-      res.render('index', { room: room, imageUrl: null, messages: messages });
-    })
-    .catch((error) => {
-      console.error('Error retrieving messages:', error);
-      res.render('index', { room: room, imageUrl: null, messages: [] });
-    });
+  if (error) {
+    console.error('Error saving message:', error);
+    res.status(500).send('Error saving message');
+    return;
+  }
+
+  res.redirect(`/messages/${room}`);
 });
-
 
 app.get('/image/:filename', (req, res) => {
   const filename = req.params.filename;
@@ -70,24 +69,19 @@ app.get('/image/:filename', (req, res) => {
   });
 });
 
-app.post('/send-message', upload.single('file'), (req, res) => {
-  const message = req.body.message;
+app.post('/send-message', upload.single('file'), async (req, res) => {
+  const { message, room } = req.body;
   const file = req.file;
-  const room = req.body.room;
+  const writerName = req.body.writerName;
+  const timestamp = new Date().toISOString();
 
   let imageUrl = null;
 
-  // Customize the file handling logic here
   if (file) {
-    // Perform actions with the uploaded file
-    console.log('Received file:', file.originalname);
-    console.log('Stored file path:', file.path);
-    // Example: Read and encode the file as Base64
     const data = fs.readFileSync(file.path);
     const base64Image = Buffer.from(data).toString('base64');
     imageUrl = `data:image/jpeg;base64,${base64Image}`;
 
-    // Move the file to a specific location
     const destinationPath = path.join(__dirname, 'custom', 'location', file.originalname);
 
     fs.mkdir(path.join(__dirname, 'custom', 'location'), { recursive: true }, (error) => {
@@ -107,43 +101,38 @@ app.post('/send-message', upload.single('file'), (req, res) => {
       }
     });
   } else {
-    // If no file is uploaded, send an empty response
     res.send({ imageUrl: null });
   }
-  xx.push([room,message]);
-  //console.log(xx);
-  // Process the message as needed
-  console.log('Received message:', message);
 
-  // Emit the message to the specific room
-  io.to(room).emit('chat message', { room: room, message: message, imageUrl: imageUrl });
+  const { data, error } = await supabase
+    .from('messages')
+    .insert([{ room, writerName, message, timestamp, imageUrl }]);
+
+  if (error) {
+    console.error('Error saving message:', error);
+    res.status(500).send('Error saving message');
+    return;
+  }
+
+  io.to(room).emit('chat message', { room, writerName, message, timestamp, imageUrl });
 });
-app.get('/messages', (req, res) => {
-  res.json(messages); // Return the messages as JSON
-});
-app.get('/messages/:room', (req, res) => {
+
+app.get('/messages/:room', async (req, res) => {
   const room = req.params.room;
 
-  // Retrieve messages for the specified room
-  const messages =  xx.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
+  const { data: messages, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('room', room);
+
+  if (error) {
+    console.error('Error retrieving messages:', error);
+    res.status(500).send('Error retrieving messages');
+    return;
+  }
 
   res.json({ messages });
 });
-app.get('/transit/:room', (req, res) => {
-  const room = req.params.room;
-
-  // Retrieve messages for the specified room
-  const messages =  xx.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
-
-  res.json({ messages });
-});
-app.get('/transit', (req, res) => {
-  res.json(messages); // Return the messages as JSON
-});
-
-
-
-const io = socketIO(server);
 
 io.on('connection', (socket) => {
   console.log('A user connected');
@@ -158,23 +147,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('chat message', (msg) => {
-    xx.push(msg);
-    
-    console.log(xx.toString);
-    
     console.log('Received message:', msg);
     io.to(msg.room).emit('chat message', msg);
   });
 });
 
-// Placeholder function to simulate retrieving messages from a database
-function retrieveMessages(room) {
-  return new Promise((resolve, reject) => {
-    // Replace this placeholder logic with your own code to fetch messages based on the room parameter
-    // Example: Query a database for messages belonging to the specified room
-    //const ronos = listOfLists.filter((list) => list[0] === "rono");
-    const messages =  xx.filter((list) => list[0] === room);
-
-    resolve(messages);
-  });
-}
