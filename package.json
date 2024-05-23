@@ -1,7 +1,7 @@
 {
   "name": "qqpersonalchat",
   "version": "16.13.2",
-  "description": "Description of your app",
+  "description": "Not really simple socket chat backend",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
