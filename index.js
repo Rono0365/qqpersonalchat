@@ -42,7 +42,7 @@ app.post('/:room', async (req, res) => {
 
   const { data, error } = await supabase
     .from('messages')
-    .insert([{ message }]);
+    .insert([{{ message, writerName } }]);
 
   if (error) {
     console.error('Error saving message:', error);
