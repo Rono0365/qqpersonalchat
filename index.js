@@ -40,9 +40,9 @@ app.post('/:room', async (req, res) => {
 
   console.log('Received message:', message);
 
-  const { data, error } = await supabase
+  /*const { data, error } = await supabase
     .from('messages')
-    .insert([{{ message, writerName } }]);
+    .insert([{{ message, writerName } }]);*/
 
   if (error) {
     console.error('Error saving message:', error);
@@ -106,7 +106,7 @@ app.post('/send-message', upload.single('file'), async (req, res) => {
 
   const { data, error } = await supabase
     .from('messages')
-    .insert([{ room, writerName, message, timestamp, imageUrl }]);
+    .insert([{  message }]);
 
   if (error) {
     console.error('Error saving message:', error);
