@@ -1,18 +1,18 @@
+//designed this for p2p chat communication 
+//ps: data here is'nt stored anywhere besides the receiver and sender's device plus it's 
+//encrypted hence end to end encryption ... it's mostly designed for afleet||Onestack||freshfit||and now buswise (formarlly Afleet)
 const express = require('express');
 const socketIO = require('socket.io');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+
 const app = express();
 const server = app.listen(3000, () => {
   console.log('Server is running on port 3000');
 });
 const xx =[];
-const supabaseUrl = 'https://steuaippbrlbwilvzltr.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0ZXVhaXBwYnJsYndpbHZ6bHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUwNTExNjYsImV4cCI6MjAzMDYyNzE2Nn0.MJY3oTZ9iwL5jq_R3swYyT8DM-tXF7cWyR_R9RkU1D0';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -30,6 +30,7 @@ const storage = multer.diskStorage({
     cb(null, 'file-' + uniqueSuffix + fileExtension);
   }
 });
+
 const upload = multer({ storage });
 const messagesByRoom = {};
 
@@ -43,19 +44,14 @@ app.post('/:room', (req, res) => {
 
   // Save the message for the specified room
   xx.push([room, [writerName,message,timestamp]]);
-  saveList([room, [writerName,message,timestamp]]);
-  
 
-  console.log('List saved successfully:', xx);
   // Retrieve messages for the specified room
   retrieveMessages(room)
     .then((messages) => {
       res.render('index', { room: room, imageUrl: null, messages: messages });
-      
     })
     .catch((error) => {
       console.error('Error retrieving messages:', error);
-
       res.render('index', { room: room, imageUrl: null, messages: [] });
     });
 });
@@ -128,21 +124,11 @@ app.post('/send-message', upload.single('file'), (req, res) => {
 app.get('/messages', (req, res) => {
   res.json(messages); // Return the messages as JSON
 });
-app.get('/messages/:room', async (req, res) => {
+app.get('/messages/:room', (req, res) => {
   const room = req.params.room;
 
   // Retrieve messages for the specified room
-  fetchData();
-  
-
-  
- 
-  //x1 === saved directly on a supabase server 
-  //downfall for that is that it's slow and behaves weird in prod
-  //returned the old system works fine except no data us saved for p2p chat (xx)
-  const messages =  xx.filter((list) => list[0] === room);//x1.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
-  
-  //res.json( {"messages":JSON.parse(data.map((tt) => tt['message']))});
+  const messages =  xx.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
 
   res.json({ messages });
 });
