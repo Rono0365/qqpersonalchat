@@ -154,6 +154,14 @@ app.get('/messages/:room', (req, res) => {
 
   res.json({ messages });
 });
+app.get('/status/:room', (req, res) => {
+  const room = req.params.room;
+
+  // Retrieve messages for the specified room
+  const messages =  xx.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
+
+  res.json({ messages });
+});
 
 
 
