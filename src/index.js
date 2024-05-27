@@ -56,27 +56,6 @@ app.post('/:room', (req, res) => {
     });
 });
 
-app.post('status/:room', (req, res) => {
-  const room = req.params.room;
-  const message = req.body.message;
-  const writerName = req.body.writerName;
-  const timestamp = new Date().toLocaleString();
-  // Process the message as needed
-  console.log('Received message:', message);
-
-  // Save the message for the specified room
-  xx.push([room, [writerName,message,timestamp]]);
-
-  // Retrieve messages for the specified room
-  retrieveMessages(room)
-    .then((messages) => {
-      res.render('index', { room: room, imageUrl: null, messages: messages });
-    })
-    .catch((error) => {
-      console.error('Error retrieving messages:', error);
-      res.render('index', { room: room, imageUrl: null, messages: [] });
-    });
-});
 
 
 app.get('/image/:filename', (req, res) => {
