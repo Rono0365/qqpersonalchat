@@ -132,6 +132,62 @@ app.get('/messages/:room', (req, res) => {
 
   res.json({ messages });
 });
+app.get('/online/:room', (req, res) => {
+  const room = req.params.room;
+
+  // Retrieve messages for the specified room
+  const messages =  xx.filter((list) => list[0] === room);//xx//messagesByRoom[room] || [];
+
+  res.json({ messages });
+});
+app.post('/online', upload.single('file'), (req, res) => {
+  const message = req.body.message;
+  const file = req.file;
+  const room = req.body.room;
+
+  let imageUrl = null;
+
+  // Customize the file handling logic here
+  if (file) {
+    // Perform actions with the uploaded file
+    console.log('Received file:', file.originalname);
+    console.log('Stored file path:', file.path);
+    // Example: Read and encode the file as Base64
+    const data = fs.readFileSync(file.path);
+    const base64Image = Buffer.from(data).toString('base64');
+    imageUrl = `data:image/jpeg;base64,${base64Image}`;
+
+    // Move the file to a specific location
+    const destinationPath = path.join(__dirname, 'custom', 'location', file.originalname);
+
+    fs.mkdir(path.join(__dirname, 'custom', 'location'), { recursive: true }, (error) => {
+      if (error) {
+        console.error('Error creating destination directory:', error);
+        res.send({ imageUrl: null });
+      } else {
+        fs.rename(file.path, destinationPath, (error) => {
+          if (error) {
+            console.error('Error moving file:', error);
+            res.send({ imageUrl: null });
+          } else {
+            console.log('File moved to:', destinationPath);
+            res.json({ imageUrl });
+          }
+        });
+      }
+    });
+  } else {
+    // If no file is uploaded, send an empty response
+    res.send({ imageUrl: null });
+  }
+  xx.push([room,message]);
+  //console.log(xx);
+  // Process the message as needed
+  console.log('Received message:', message);
+
+  // Emit the message to the specific room
+  io.to(room).emit('chat message', { room: room, message: message, imageUrl: imageUrl });
+});
 
 
 
