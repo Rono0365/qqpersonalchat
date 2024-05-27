@@ -44,9 +44,9 @@ app.post('/:room', (req, res) => {
   // Save the message for the specified room
   xx.push([room, [writerName,message,timestamp]]);
   saveList([room, [writerName,message,timestamp]]);
-  deleteAllExceptLast();
+  
 
-    console.log('List saved successfully:', xx);
+  console.log('List saved successfully:', xx);
   // Retrieve messages for the specified room
   retrieveMessages(room)
     .then((messages) => {
